@@ -14,28 +14,41 @@ import dev.danielblasina.androidbackup.files.Directory
 import java.util.logging.Logger
 
 // periodic task list files and compare to what is in FileState
-class FileChangeDetector(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
-    val db = Room.databaseBuilder(
-        applicationContext,
-        AppDatabase::class.java,
-        DATABASE_NAME
-    ).build()
+class FileChangeDetector(
+    appContext: Context,
+    workerParams: WorkerParameters,
+) : Worker(appContext, workerParams) {
+    val db =
+        Room
+            .databaseBuilder(
+                applicationContext,
+                AppDatabase::class.java,
+                DATABASE_NAME,
+            ).build()
     val logger: Logger = Logger.getLogger(this.javaClass.name)
+
     override fun doWork(): Result {
-        val fileChangeQueueDao = db.fileChangeQueueDao();
-        val fileStateDao = db.fileStateDao();
-        logger.info("enqueue UniqueWork "+ fileChangeQueueDao.count() + " : " + fileStateDao.listAll().size)
+        val fileChangeQueueDao = db.fileChangeQueueDao()
+        val fileStateDao = db.fileStateDao()
+        logger.info(
+            "enqueue UniqueWork " + fileChangeQueueDao.count() + " : " + fileStateDao.listAll().size,
+        )
         val dir = Directory(Environment.getExternalStoragePublicDirectory("/"))
         db.fileChangeQueueDao().add(dir.listChanges(recursive = true, fileStateDao.listAll()))
         logger.info("work scheduled and inserted " + fileChangeQueueDao.count())
         return Result.success()
     }
+
     companion object {
         fun start(applicationContext: Context) {
             val uploadWorkRequest = OneTimeWorkRequestBuilder<FileChangeDetector>().build()
             WorkManager
                 .getInstance(applicationContext)
-                .enqueueUniqueWork(this::class.java.name, ExistingWorkPolicy.REPLACE, uploadWorkRequest)
+                .enqueueUniqueWork(
+                    this::class.java.name,
+                    ExistingWorkPolicy.REPLACE,
+                    uploadWorkRequest,
+                )
         }
     }
 }

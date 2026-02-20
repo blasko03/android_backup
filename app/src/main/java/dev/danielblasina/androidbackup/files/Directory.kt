@@ -9,71 +9,97 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.time.Instant
 import java.util.logging.Logger
 
-
-class Directory (val directory: File){
+class Directory(
+    val directory: File,
+) {
     val logger: Logger = Logger.getLogger(this.javaClass.name)
-    fun listFiles(recursive: Boolean = false): List<File>{
-        val files = directory
-            .listFiles()
-            ?.filterNotNull()
-            ?.flatMap { file ->
-                if( (file.isDirectory && recursive))
-                    Directory(file).listFiles()
-                else if (file.isDirectory)
-                    listOf()
-                else
-                    listOf(file) }
-            ?: listOf()
+
+    fun listFiles(recursive: Boolean = false): List<File> {
+        val files =
+            directory
+                .listFiles()
+                ?.filterNotNull()
+                ?.flatMap { file ->
+                    if ((file.isDirectory && recursive)) {
+                        Directory(file).listFiles()
+                    } else if (file.isDirectory) {
+                        listOf()
+                    } else {
+                        listOf(file)
+                    }
+                }
+                ?: listOf()
         return files
     }
 
-    fun listChanges(recursive: Boolean = false, uploadedFiles: List<FileState>): List<FileChangeQueue> {
+    fun listChanges(
+        recursive: Boolean = false,
+        uploadedFiles: List<FileState>,
+    ): List<FileChangeQueue> {
         val files = listFiles(recursive = recursive).associateBy { it.path }.toMutableMap()
         val uploadedFilesMap = uploadedFiles.associateBy { it.filePath }.toMutableMap()
 
         val changes = HashMap<String, FileChangeQueue>()
 
-
-        for (file in files){
+        for (file in files) {
             val uploadedFile = uploadedFilesMap[file.key]
             val action = getAction(file.value, uploadedFile)
-            if(action != FileActionType.NONE)
-                changes[file.key] = FileChangeQueue(
-                    filePath = file.value.path,
-                    enqueuedAt = Instant.now(),
-                    actionType = action
-                )
+            if (action != FileActionType.NONE) {
+                changes[file.key] =
+                    FileChangeQueue(
+                        filePath = file.value.path,
+                        enqueuedAt = Instant.now(),
+                        actionType = action,
+                    )
+            }
             uploadedFilesMap.remove(file.key)
         }
 
         for (file in uploadedFilesMap) {
-            changes[file.key] = FileChangeQueue(
-                filePath = file.value.filePath,
-                enqueuedAt = Instant.now(),
-                actionType = FileActionType.REMOVE
-            )
+            changes[file.key] =
+                FileChangeQueue(
+                    filePath = file.value.filePath,
+                    enqueuedAt = Instant.now(),
+                    actionType = FileActionType.REMOVE,
+                )
         }
 
         return changes.map { change -> change.value }
     }
-    private fun getAction(file: File, uploadedFile: FileState?): FileActionType{
-        if(uploadedFile == null)
-            return FileActionType.ADD
 
-        if(hasChanged(file, uploadedFile))
+    private fun getAction(
+        file: File,
+        uploadedFile: FileState?,
+    ): FileActionType {
+        if (uploadedFile == null) {
+            return FileActionType.ADD
+        }
+
+        if (hasChanged(file, uploadedFile)) {
             return FileActionType.CHANGE
+        }
 
         return FileActionType.NONE
     }
 
-    private fun hasChanged(file: File, uploadedFile: FileState): Boolean{
-        val fileAttr: BasicFileAttributes = Files.readAttributes(file.toPath(), BasicFileAttributes::class.java)
-        if (fileAttr.lastModifiedTime().toInstant() != uploadedFile.lastModifiedTime)
+    private fun hasChanged(
+        file: File,
+        uploadedFile: FileState,
+    ): Boolean {
+        val fileAttr: BasicFileAttributes =
+            Files.readAttributes(
+                file.toPath(),
+                BasicFileAttributes::class.java,
+            )
+        if (fileAttr.lastModifiedTime().toInstant() != uploadedFile.lastModifiedTime) {
             return true
-        if (fileAttr.creationTime().toInstant() != uploadedFile.creationTime)
+        }
+        if (fileAttr.creationTime().toInstant() != uploadedFile.creationTime) {
             return true
-        if (fileAttr.size() != uploadedFile.size)
+        }
+        if (fileAttr.size() != uploadedFile.size) {
             return true
+        }
         return false
     }
 }

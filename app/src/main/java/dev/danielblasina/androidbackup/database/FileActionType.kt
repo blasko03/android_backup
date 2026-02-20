@@ -4,5 +4,5 @@ enum class FileActionType {
     ADD,
     REMOVE,
     CHANGE,
-    NONE
+    NONE,
 }

@@ -5,8 +5,8 @@ import androidx.room.PrimaryKey
 import java.time.Instant
 
 @Entity
-data class FileChangeQueue (
+data class FileChangeQueue(
     @PrimaryKey val filePath: String,
     val enqueuedAt: Instant,
-    val actionType: FileActionType
+    val actionType: FileActionType,
 )

@@ -33,8 +33,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
     buildFeatures {
         compose = true
@@ -54,7 +54,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation("org.bouncycastle:bcprov-jdk15to18:1.77")
     implementation("com.squareup.okhttp3:okhttp:5.3.2")
-    implementation ("com.fasterxml.jackson.core:jackson-databind:2.21.0")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.21.0")
     implementation("androidx.work:work-runtime-ktx:${workVersion}")
     implementation("androidx.room:room-runtime:${roomVersion}")
     ksp("androidx.room:room-compiler:$roomVersion")
