@@ -1,5 +1,6 @@
 package dev.danielblasina.androidbackup.files
 
+import dev.danielblasina.androidbackup.utils.NotFoundError
 import java.io.File
 import java.io.FileInputStream
 import java.security.MessageDigest
@@ -8,7 +9,7 @@ import java.util.logging.Logger
 
 const val CHUNK_SIZE = 1024 * 10
 
-class FileManager(
+class FileUpload(
     val file: File,
 ) {
     val logger: Logger = Logger.getLogger(this.javaClass.name)
@@ -25,7 +26,7 @@ class FileManager(
                     chunk
                 }.isNotEmpty()
             ) {
-                chunks.add(uploadChunk(chunk))
+                chunks.add(uploadChunk(chunk).getOrThrow())
                 fileDigest.update(chunk)
             }
         }
@@ -34,17 +35,37 @@ class FileManager(
         return checksum
     }
 
-    fun uploadChunk(chunk: ByteArray): ByteArray {
+    private fun uploadChunk(chunk: ByteArray): Result<ByteArray> {
         val chunkDigest = MessageDigest.getInstance("SHA-256").digest(chunk)
         val chunkDigestHex = Base64.getUrlEncoder().encodeToString(chunkDigest)
 
-        if (fileUploadService.chunkPresent(chunkDigestHex)) {
-            return chunkDigest
-        }
-        fileUploadService.chunkUpload(chunkDigestHex, chunk).use { response ->
-            if (!response.isSuccessful) logger.severe("Failed http request")
-            logger.info(chunkDigestHex)
-        }
-        return chunkDigest
+        fileUploadService
+            .chunkPresent(chunkDigestHex)
+            .onSuccess {
+                return Result.success(chunkDigest)
+            }.onFailure { e ->
+                when (e) {
+                    is NotFoundError -> {
+                        logger.info { "chunk not found" }
+                    }
+
+                    else -> {
+                        logger.severe(e.toString())
+                        throw e
+                    }
+                }
+            }
+
+        fileUploadService
+            .chunkUpload(chunkDigestHex, chunk)
+            .onSuccess {
+                logger.info(chunkDigestHex)
+                return Result.success(chunkDigest)
+            }.onFailure { e ->
+                logger.severe("Failed http request")
+                return Result.failure(e)
+            }
+
+        return Result.failure(Exception("Unknown error"))
     }
 }

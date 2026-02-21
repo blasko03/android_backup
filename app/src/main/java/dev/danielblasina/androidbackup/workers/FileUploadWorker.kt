@@ -11,7 +11,7 @@ import dev.danielblasina.androidbackup.database.AppDatabase
 import dev.danielblasina.androidbackup.database.DATABASE_NAME
 import dev.danielblasina.androidbackup.database.FileActionType
 import dev.danielblasina.androidbackup.database.FileState
-import dev.danielblasina.androidbackup.files.FileManager
+import dev.danielblasina.androidbackup.files.FileUpload
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
@@ -37,7 +37,7 @@ class FileUploadWorker(
         while (true) {
             val fileToUpload = fileChangeQueueDao.peek() ?: break
             logger.info(fileToUpload.filePath)
-            val hash = FileManager(File(fileToUpload.filePath)).upload()
+            val hash = FileUpload(File(fileToUpload.filePath)).upload()
             fileChangeQueueDao.delete(fileToUpload)
             val fileAttr =
                 Files.readAttributes(
