@@ -10,10 +10,9 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import dev.danielblasina.androidbackup.database.AppDatabase
 import dev.danielblasina.androidbackup.database.DATABASE_NAME
-import dev.danielblasina.androidbackup.files.Directory
+import dev.danielblasina.androidbackup.files.FileChanges
 import java.util.logging.Logger
 
-// periodic task list files and compare to what is in FileState
 class FileChangeDetector(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
     val db =
         Room
@@ -30,7 +29,7 @@ class FileChangeDetector(appContext: Context, workerParams: WorkerParameters) : 
         logger.info(
             "enqueue UniqueWork " + fileChangeQueueDao.count() + " : " + fileStateDao.listAll().size,
         )
-        val dir = Directory(Environment.getExternalStoragePublicDirectory("/"))
+        val dir = FileChanges(Environment.getExternalStoragePublicDirectory("/"))
         db.fileChangeQueueDao().add(dir.listChanges(recursive = true, fileStateDao.listAll()))
         logger.info("work scheduled and inserted " + fileChangeQueueDao.count())
         return Result.success()
@@ -43,7 +42,7 @@ class FileChangeDetector(appContext: Context, workerParams: WorkerParameters) : 
                 .getInstance(applicationContext)
                 .enqueueUniqueWork(
                     this::class.java.name,
-                    ExistingWorkPolicy.REPLACE,
+                    ExistingWorkPolicy.KEEP,
                     uploadWorkRequest,
                 )
         }

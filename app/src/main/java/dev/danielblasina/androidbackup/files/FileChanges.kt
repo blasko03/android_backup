@@ -7,9 +7,10 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.logging.Logger
 
-class Directory(val directory: File) {
+class FileChanges(val directory: File) {
     val logger: Logger = Logger.getLogger(this.javaClass.name)
 
     fun listFiles(recursive: Boolean = false): List<File> {
@@ -19,7 +20,7 @@ class Directory(val directory: File) {
                 ?.filterNotNull()
                 ?.flatMap { file ->
                     if ((file.isDirectory && recursive)) {
-                        Directory(file).listFiles()
+                        FileChanges(file).listFiles(recursive = true)
                     } else if (file.isDirectory) {
                         listOf()
                     } else {
@@ -43,6 +44,7 @@ class Directory(val directory: File) {
             val uploadedFile = uploadedFilesMap[file.key]
             val action = getAction(file.value, uploadedFile)
             if (action != FileActionType.NONE) {
+                logger.info { "file has changed $action, ${file.value.path}" }
                 changes[file.key] =
                     FileChangeQueue(
                         filePath = file.value.path,
@@ -83,10 +85,10 @@ class Directory(val directory: File) {
                 file.toPath(),
                 BasicFileAttributes::class.java,
             )
-        if (fileAttr.lastModifiedTime().toInstant() != uploadedFile.lastModifiedTime) {
+        if (fileAttr.lastModifiedTime().toInstant().truncatedTo(ChronoUnit.MILLIS) != uploadedFile.lastModifiedTime) {
             return true
         }
-        if (fileAttr.creationTime().toInstant() != uploadedFile.creationTime) {
+        if (fileAttr.creationTime().toInstant().truncatedTo(ChronoUnit.MILLIS) != uploadedFile.creationTime) {
             return true
         }
         if (fileAttr.size() != uploadedFile.size) {

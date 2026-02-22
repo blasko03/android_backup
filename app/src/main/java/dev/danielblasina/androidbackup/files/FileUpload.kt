@@ -9,7 +9,7 @@ import java.security.MessageDigest
 import java.util.Base64
 import java.util.logging.Logger
 
-const val CHUNK_SIZE = 1024 * 10
+const val CHUNK_SIZE = 1024 * 1024
 const val RETRIES = 3
 class FileUpload(val file: File) {
     val logger: Logger = Logger.getLogger(this.javaClass.name)
@@ -26,9 +26,10 @@ class FileUpload(val file: File) {
                     chunk
                 }.isNotEmpty()
             ) {
-                withRetry({ uploadChunk(chunk) }, numberOfRetry = RETRIES)
+                val hash = MessageDigest.getInstance("SHA-256").digest(chunk)
+                withRetry({ uploadChunk(chunk, hash) }, numberOfRetry = RETRIES)
                     .onSuccess {
-                        chunks.add(chunk)
+                        chunks.add(hash)
                         fileDigest.update(chunk)
                     }.getOrThrow()
             }
@@ -41,8 +42,7 @@ class FileUpload(val file: File) {
         return checksum
     }
 
-    private fun uploadChunk(chunk: ByteArray): Result<Response> {
-        val chunkDigest = MessageDigest.getInstance("SHA-256").digest(chunk)
+    private fun uploadChunk(chunk: ByteArray, chunkDigest: ByteArray): Result<Response> {
         val chunkDigestB64 = Base64.getUrlEncoder().encodeToString(chunkDigest)
 
         fileUploadService

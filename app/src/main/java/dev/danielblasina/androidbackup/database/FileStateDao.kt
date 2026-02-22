@@ -1,7 +1,6 @@
 package dev.danielblasina.androidbackup.database
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -17,6 +16,6 @@ interface FileStateDao {
     @Query("SELECT * FROM FileState ORDER BY filePath")
     fun listAll(): List<FileState>
 
-    @Delete
-    fun delete(fileState: FileState)
+    @Query("DELETE FROM FileState WHERE filePath = :filePath")
+    fun delete(filePath: String)
 }

@@ -7,18 +7,23 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import dev.danielblasina.androidbackup.ui.theme.MyApplicationTheme
 import dev.danielblasina.androidbackup.workers.FileChangeDetector
+import dev.danielblasina.androidbackup.workers.FileChangeScheduler
+import dev.danielblasina.androidbackup.workers.FileUploadScheduler
 import dev.danielblasina.androidbackup.workers.FileUploadWorker
+import java.util.logging.Logger
 
 class MainActivity : ComponentActivity() {
+    val logger: Logger = Logger.getLogger(this.javaClass.name)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -29,34 +34,28 @@ class MainActivity : ComponentActivity() {
             startActivity(intent)
         }
 
-        FileChangeDetector.start(applicationContext)
-        FileUploadWorker.start(applicationContext)
+        FileChangeScheduler.start(applicationContext)
+        FileUploadScheduler.start(applicationContext)
         enableEdgeToEdge()
         setContent {
             MyApplicationTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "files",
-                        modifier = Modifier.padding(innerPadding),
-                    )
+                    Column {
+                        Button(onClick = {
+                            logger.info { "FileChangeDetector was requested to start" }
+                            FileChangeDetector.start(applicationContext)
+                        }, modifier = Modifier.padding(innerPadding)) {
+                            Text("Start FileChangeDetector")
+                        }
+                        Button(onClick = {
+                            logger.info { "FileUploadWorker was requested to start" }
+                            FileUploadWorker.start(applicationContext)
+                        }, modifier = Modifier.padding(innerPadding)) {
+                            Text("Start FileUploadWorker")
+                        }
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hellojhhhhhh $name!",
-        modifier = modifier,
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MyApplicationTheme {
-        Greeting("Androidkjjjjjjj")
     }
 }
