@@ -15,8 +15,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import dev.danielblasina.androidbackup.ui.theme.MyApplicationTheme
+import dev.danielblasina.androidbackup.workers.ChecksumChecker
 import dev.danielblasina.androidbackup.workers.FileChangeDetector
 import dev.danielblasina.androidbackup.workers.FileChangeScheduler
+import dev.danielblasina.androidbackup.workers.FileStateReconcile
 import dev.danielblasina.androidbackup.workers.FileUploadScheduler
 import dev.danielblasina.androidbackup.workers.FileUploadWorker
 import java.util.logging.Logger
@@ -52,6 +54,18 @@ class MainActivity : ComponentActivity() {
                             FileUploadWorker.start(applicationContext)
                         }, modifier = Modifier.padding(innerPadding)) {
                             Text("Start FileUploadWorker")
+                        }
+                        Button(onClick = {
+                            logger.info { "ChecksumChecker was requested to start" }
+                            ChecksumChecker.start(applicationContext)
+                        }, modifier = Modifier.padding(innerPadding)) {
+                            Text("Start ChecksumChecker")
+                        }
+                        Button(onClick = {
+                            logger.info { "FileStateReconcile was requested to start" }
+                            FileStateReconcile.start(applicationContext)
+                        }, modifier = Modifier.padding(innerPadding)) {
+                            Text("Start FileStateReconcile")
                         }
                     }
                 }

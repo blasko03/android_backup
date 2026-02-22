@@ -11,6 +11,9 @@ interface FileChangeQueueDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun add(fileChanges: List<FileChangeQueue>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun add(fileChanges: FileChangeQueue)
+
     @Query("SELECT COUNT(*) FROM FileChangeQueue")
     fun count(): Int
 

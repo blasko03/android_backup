@@ -11,4 +11,6 @@ data class FileState(
     val size: Long,
     val creationTime: Instant,
     val lastModifiedTime: Instant,
+    val lastServerCheck: Instant,
+    val lastHashCheck: Instant,
 )

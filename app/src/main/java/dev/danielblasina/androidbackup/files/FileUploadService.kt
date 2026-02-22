@@ -1,7 +1,6 @@
 package dev.danielblasina.androidbackup.files
 
 import android.net.Uri
-import dev.danielblasina.androidbackup.utils.FailedRequestError
 import dev.danielblasina.androidbackup.utils.JsonParse
 import dev.danielblasina.androidbackup.utils.executeWithRescue
 import okhttp3.MediaType.Companion.toMediaType
@@ -17,10 +16,10 @@ import java.nio.file.Path
 const val MEDIA_TYPE_JSON = "application/json"
 
 class FileUploadService {
-    data class UploadFile(val name: Path, val chunks: ArrayList<ByteArray>, val checksum: ByteArray)
+    data class UploadFile(val name: Path, val chunks: ArrayList<ByteArray>, val hash: ByteArray)
 
     val client = OkHttpClient()
-    val uri = URI("http:/192.168.1.126:8080/")
+    val uri = URI("http:/192.168.1.133:8080/")
 
     fun chunkUpload(filename: String, chunk: ByteArray): Result<Response> {
         val requestBody =
@@ -45,14 +44,7 @@ class FileUploadService {
                 .Builder()
                 .url(uri.resolve("chunk/").resolve(filename).toURL())
                 .build()
-        val res = client.newCall(request).executeWithRescue()
-
-        return res.onSuccess { response ->
-            when (response.code) {
-                HttpURLConnection.HTTP_OK -> Result.success(response)
-                else -> Result.failure(FailedRequestError(response))
-            }
-        }
+        return client.newCall(request).executeWithRescue(successCodes = arrayOf(HttpURLConnection.HTTP_OK))
     }
 
     fun fileUpload(
@@ -69,5 +61,17 @@ class FileUploadService {
                 .build()
 
         return client.newCall(request).executeWithRescue()
+    }
+
+    fun filePresent(filePath: Path, hash: ByteArray): Result<Response> {
+        val json = JsonParse.objectToJsonString(UploadFile(name = filePath, hash = hash, chunks = ArrayList()))
+        val request: Request =
+            Request
+                .Builder()
+                .url(uri.resolve("file_present").toURL())
+                .post(json.toRequestBody(MEDIA_TYPE_JSON.toMediaType()))
+                .build()
+
+        return client.newCall(request).executeWithRescue(successCodes = arrayOf(HttpURLConnection.HTTP_OK))
     }
 }

@@ -18,6 +18,7 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
@@ -53,13 +54,14 @@ class FileUploadWorker(appContext: Context, workerParams: WorkerParameters) : Wo
                         size = fileAttr.size(),
                         lastModifiedTime = fileAttr.lastModifiedTime().toInstant(),
                         creationTime = fileAttr.creationTime().toInstant(),
+                        lastHashCheck = Instant.now(),
+                        lastServerCheck = Instant.now(),
                     )
                     fileStataDao.add(fileState)
                 }
                 fileChangeQueueDao.delete(fileChange)
             } catch (e: FileNotFoundException) {
-                e.printStackTrace()
-                logger.warning { "Wasn't able to upload file $fileChange.filePath with error ${e.message}" }
+                logger.warning { "Wasn't able to upload file ${fileChange.filePath} with error ${e.message}" }
                 fileChangeQueueDao.delete(fileChange)
             }
             logger.info { "queue has ${db.fileChangeQueueDao().count()} elements" }
@@ -71,7 +73,7 @@ class FileUploadWorker(appContext: Context, workerParams: WorkerParameters) : Wo
     companion object {
         @OptIn(ExperimentalWorkRequestBuilderApi::class)
         fun start(applicationContext: Context) {
-            val uploadWorkRequest = OneTimeWorkRequestBuilder<FileUploadWorker>()
+            val work = OneTimeWorkRequestBuilder<FileUploadWorker>()
                 .setBackoffCriteria(BackoffPolicy.LINEAR, 1, TimeUnit.MINUTES)
                 .setBackoffForSystemInterruptions()
                 .build()
@@ -79,7 +81,7 @@ class FileUploadWorker(appContext: Context, workerParams: WorkerParameters) : Wo
                 .enqueueUniqueWork(
                     this::class.java.name,
                     ExistingWorkPolicy.KEEP,
-                    uploadWorkRequest,
+                    work,
                 )
         }
     }

@@ -8,9 +8,12 @@ import java.util.logging.Logger
 
 val RETRYABLE_ERRORS = listOf(408, 429, 500, 502, 503, 504)
 
-fun Call.executeWithRescue(): Result<Response> {
+fun Call.executeWithRescue(successCodes: Array<Int> = arrayOf()): Result<Response> {
     try {
         execute().use { res ->
+            if (successCodes.isNotEmpty() && res.code in successCodes) {
+                return Result.success(res)
+            }
             if (res.isSuccessful) {
                 return Result.success(res)
             }

@@ -37,13 +37,14 @@ class FileChangeDetector(appContext: Context, workerParams: WorkerParameters) : 
 
     companion object {
         fun start(applicationContext: Context) {
-            val uploadWorkRequest = OneTimeWorkRequestBuilder<FileChangeDetector>().build()
+            val work = OneTimeWorkRequestBuilder<FileChangeDetector>()
+                .build()
             WorkManager
                 .getInstance(applicationContext)
                 .enqueueUniqueWork(
                     this::class.java.name,
                     ExistingWorkPolicy.KEEP,
-                    uploadWorkRequest,
+                    work,
                 )
         }
     }

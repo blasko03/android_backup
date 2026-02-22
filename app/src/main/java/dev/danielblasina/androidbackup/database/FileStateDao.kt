@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import java.time.Instant
 
 @Dao
 interface FileStateDao {
@@ -15,6 +16,30 @@ interface FileStateDao {
 
     @Query("SELECT * FROM FileState ORDER BY filePath")
     fun listAll(): List<FileState>
+
+    @Query(
+        "SELECT * FROM FileState " +
+            "LEFT JOIN FileChangeQueue ON FileChangeQueue.filePath == FileState.filePath " +
+            "WHERE FileState.lastHashCheck < :from " +
+            "ORDER BY FileState.lastHashCheck ASC " +
+            "LIMIT 1",
+    )
+    fun getNextHashCheck(from: Instant): FileState?
+
+    @Query("UPDATE FileState SET lastHashCheck = :instant WHERE filePath = :filePath")
+    fun setHashCheck(filePath: String, instant: Instant)
+
+    @Query(
+        "SELECT * FROM FileState " +
+            "LEFT JOIN FileChangeQueue ON FileChangeQueue.filePath == FileState.filePath " +
+            "WHERE FileState.lastServerCheck < :from " +
+            "ORDER BY FileState.lastServerCheck ASC " +
+            "LIMIT 1",
+    )
+    fun getNextServerCheck(from: Instant): FileState?
+
+    @Query("UPDATE FileState SET lastServerCheck = :instant WHERE filePath = :filePath")
+    fun setServerCheck(filePath: String, instant: Instant)
 
     @Query("DELETE FROM FileState WHERE filePath = :filePath")
     fun delete(filePath: String)
