@@ -14,10 +14,7 @@ import dev.danielblasina.androidbackup.files.Directory
 import java.util.logging.Logger
 
 // periodic task list files and compare to what is in FileState
-class FileChangeDetector(
-    appContext: Context,
-    workerParams: WorkerParameters,
-) : Worker(appContext, workerParams) {
+class FileChangeDetector(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
     val db =
         Room
             .databaseBuilder(

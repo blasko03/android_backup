@@ -3,7 +3,7 @@ package dev.danielblasina.androidbackup.files
 import android.net.Uri
 import dev.danielblasina.androidbackup.utils.FailedRequestError
 import dev.danielblasina.androidbackup.utils.JsonParse
-import dev.danielblasina.androidbackup.utils.NotFoundError
+import dev.danielblasina.androidbackup.utils.executeWithRescue
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -17,61 +17,36 @@ import java.nio.file.Path
 const val MEDIA_TYPE_JSON = "application/json"
 
 class FileUploadService {
-    data class UploadFile(
-        val name: Path,
-        val chunks: ArrayList<ByteArray>,
-        val checksum: ByteArray,
-    )
+    data class UploadFile(val name: Path, val chunks: ArrayList<ByteArray>, val checksum: ByteArray)
 
     val client = OkHttpClient()
     val uri = URI("http:/localdev.com:8080/")
 
-    fun cathExceptionToResult(operation: () -> Response): Result<Response> {
-        try {
-            val res = operation()
-            if (res.isSuccessful) {
-                return Result.success(res)
-            }
-            if (res.code == HttpURLConnection.HTTP_NOT_FOUND) {
-                return Result.failure(NotFoundError(res))
-            }
-            return Result.failure(FailedRequestError(res))
-        } catch (e: Exception) {
-            return Result.failure(e)
-        }
+    fun chunkUpload(filename: String, chunk: ByteArray): Result<Response> {
+        val requestBody =
+            MultipartBody
+                .Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("file", filename, chunk.toRequestBody())
+                .build()
+        Uri.Builder()
+        val request: Request =
+            Request
+                .Builder()
+                .url(uri.resolve("chunk").toURL())
+                .post(requestBody)
+                .build()
+        return client.newCall(request).executeWithRescue()
     }
 
-    fun chunkUpload(
-        filename: String,
-        chunk: ByteArray,
-    ): Result<Response> =
-        cathExceptionToResult {
-            val requestBody =
-                MultipartBody
-                    .Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart("file", filename, chunk.toRequestBody())
-                    .build()
-            Uri.Builder()
-            val request: Request =
-                Request
-                    .Builder()
-                    .url(uri.resolve("chunk").toURL())
-                    .post(requestBody)
-                    .build()
-            client.newCall(request).execute()
-        }
-
     fun chunkPresent(filename: String): Result<Response> {
-        val res =
-            cathExceptionToResult {
-                val request: Request =
-                    Request
-                        .Builder()
-                        .url(uri.resolve("chunk/").resolve(filename).toURL())
-                        .build()
-                client.newCall(request).execute()
-            }
+        val request: Request =
+            Request
+                .Builder()
+                .url(uri.resolve("chunk/").resolve(filename).toURL())
+                .build()
+        val res = client.newCall(request).executeWithRescue()
+
         return res.onSuccess { response ->
             when (response.code) {
                 HttpURLConnection.HTTP_OK -> Result.success(response)
@@ -84,15 +59,15 @@ class FileUploadService {
         filename: Path,
         checksum: ByteArray,
         chunks: ArrayList<ByteArray>,
-    ): Result<Response> =
-        cathExceptionToResult {
-            val json = JsonParse.objectToJsonString(UploadFile(filename, chunks, checksum))
-            val request: Request =
-                Request
-                    .Builder()
-                    .url(uri.resolve("file").toURL())
-                    .post(json.toRequestBody(MEDIA_TYPE_JSON.toMediaType()))
-                    .build()
-            client.newCall(request).execute()
-        }
+    ): Result<Response> {
+        val json = JsonParse.objectToJsonString(UploadFile(filename, chunks, checksum))
+        val request: Request =
+            Request
+                .Builder()
+                .url(uri.resolve("file").toURL())
+                .post(json.toRequestBody(MEDIA_TYPE_JSON.toMediaType()))
+                .build()
+
+        return client.newCall(request).executeWithRescue()
+    }
 }

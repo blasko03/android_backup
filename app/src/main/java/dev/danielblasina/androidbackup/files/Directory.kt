@@ -9,9 +9,7 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.time.Instant
 import java.util.logging.Logger
 
-class Directory(
-    val directory: File,
-) {
+class Directory(val directory: File) {
     val logger: Logger = Logger.getLogger(this.javaClass.name)
 
     fun listFiles(recursive: Boolean = false): List<File> {
@@ -67,10 +65,7 @@ class Directory(
         return changes.map { change -> change.value }
     }
 
-    private fun getAction(
-        file: File,
-        uploadedFile: FileState?,
-    ): FileActionType {
+    private fun getAction(file: File, uploadedFile: FileState?): FileActionType {
         if (uploadedFile == null) {
             return FileActionType.ADD
         }
@@ -82,10 +77,7 @@ class Directory(
         return FileActionType.NONE
     }
 
-    private fun hasChanged(
-        file: File,
-        uploadedFile: FileState,
-    ): Boolean {
+    private fun hasChanged(file: File, uploadedFile: FileState): Boolean {
         val fileAttr: BasicFileAttributes =
             Files.readAttributes(
                 file.toPath(),

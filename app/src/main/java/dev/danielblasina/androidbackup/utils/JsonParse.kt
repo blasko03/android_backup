@@ -3,10 +3,7 @@ package dev.danielblasina.androidbackup.utils
 import com.fasterxml.jackson.databind.ObjectMapper
 
 internal object JsonParse {
-    fun <T> parse(
-        requestBody: ByteArray,
-        classType: Class<T>,
-    ): T {
+    fun <T> parse(requestBody: ByteArray, classType: Class<T>): T {
         val objectMapper = ObjectMapper()
         return objectMapper.readValue(requestBody, classType)
     }
