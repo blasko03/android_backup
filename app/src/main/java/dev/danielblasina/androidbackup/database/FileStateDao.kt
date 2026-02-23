@@ -34,12 +34,12 @@ interface FileStateDao {
             "LEFT JOIN FileChangeQueue ON FileChangeQueue.filePath == FileState.filePath " +
             "WHERE FileState.lastServerCheck < :from " +
             "ORDER BY FileState.lastServerCheck ASC " +
-            "LIMIT 1",
+            "LIMIT :limit",
     )
-    fun getNextServerCheck(from: Instant): FileState?
+    fun getNextServerCheck(from: Instant, limit: Int = 1): Array<FileState>
 
-    @Query("UPDATE FileState SET lastServerCheck = :instant WHERE filePath = :filePath")
-    fun setServerCheck(filePath: String, instant: Instant)
+    @Query("UPDATE FileState SET lastServerCheck = :instant WHERE filePath IN (:filePath)")
+    fun setServerCheck(filePath: List<String>, instant: Instant)
 
     @Query("DELETE FROM FileState WHERE filePath = :filePath")
     fun delete(filePath: String)

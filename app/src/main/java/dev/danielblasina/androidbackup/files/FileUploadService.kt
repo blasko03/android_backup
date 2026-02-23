@@ -3,6 +3,7 @@ package dev.danielblasina.androidbackup.files
 import android.net.Uri
 import dev.danielblasina.androidbackup.utils.JsonParse
 import dev.danielblasina.androidbackup.utils.executeWithRescue
+import dev.danielblasina.androidbackup.utils.executeWithRescueJson
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -15,8 +16,17 @@ import java.nio.file.Path
 
 const val MEDIA_TYPE_JSON = "application/json"
 
+data class UploadedFile(
+    val name: Path,
+    val chunks: List<ByteArray> = listOf(),
+    val hash: ByteArray,
+)
+
+data class UploadedFileCheck(
+    val name: String,
+    val present: Boolean,
+)
 class FileUploadService {
-    data class UploadFile(val name: Path, val chunks: ArrayList<ByteArray>, val hash: ByteArray)
 
     val client = OkHttpClient()
     val uri = URI("http:/192.168.1.133:8080/")
@@ -52,7 +62,7 @@ class FileUploadService {
         checksum: ByteArray,
         chunks: ArrayList<ByteArray>,
     ): Result<Response> {
-        val json = JsonParse.objectToJsonString(UploadFile(filename, chunks, checksum))
+        val json = JsonParse.objectToJsonString(UploadedFile(filename, chunks, checksum))
         val request: Request =
             Request
                 .Builder()
@@ -63,8 +73,8 @@ class FileUploadService {
         return client.newCall(request).executeWithRescue()
     }
 
-    fun filePresent(filePath: Path, hash: ByteArray): Result<Response> {
-        val json = JsonParse.objectToJsonString(UploadFile(name = filePath, hash = hash, chunks = ArrayList()))
+    fun filesPresent(files: List<UploadedFile>): Result<List<UploadedFileCheck>> {
+        val json = JsonParse.objectToJsonString(files)
         val request: Request =
             Request
                 .Builder()
@@ -72,6 +82,6 @@ class FileUploadService {
                 .post(json.toRequestBody(MEDIA_TYPE_JSON.toMediaType()))
                 .build()
 
-        return client.newCall(request).executeWithRescue(successCodes = arrayOf(HttpURLConnection.HTTP_OK))
+        return client.newCall(request).executeWithRescueJson<ArrayList<UploadedFileCheck>>(successCodes = arrayOf(HttpURLConnection.HTTP_OK))
     }
 }

@@ -58,6 +58,7 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:${workVersion}")
     implementation("androidx.room:room-runtime:${roomVersion}")
     ksp("androidx.room:room-compiler:$roomVersion")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

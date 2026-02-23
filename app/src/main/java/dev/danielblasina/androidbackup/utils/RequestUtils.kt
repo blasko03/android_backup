@@ -8,6 +8,26 @@ import java.util.logging.Logger
 
 val RETRYABLE_ERRORS = listOf(408, 429, 500, 502, 503, 504)
 
+inline fun <reified T> Call.executeWithRescueJson(successCodes: Array<Int> = arrayOf()): Result<T> {
+    try {
+        execute().use { res ->
+            val body = res.body.byteStream()
+            if (successCodes.isNotEmpty() && res.code in successCodes) {
+                return Result.success(JsonParse.parse<T>(body))
+            }
+            if (res.isSuccessful) {
+                return Result.success(JsonParse.parse<T>(body))
+            }
+            if (res.code == HttpURLConnection.HTTP_NOT_FOUND) {
+                return Result.failure(NotFoundError(res))
+            }
+            return Result.failure(FailedRequestError(res))
+        }
+    } catch (e: IOException) {
+        return Result.failure(e)
+    }
+}
+
 fun Call.executeWithRescue(successCodes: Array<Int> = arrayOf()): Result<Response> {
     try {
         execute().use { res ->
