@@ -14,11 +14,11 @@ import dev.danielblasina.androidbackup.database.FileChangeQueue
 import dev.danielblasina.androidbackup.files.calculateHash
 import java.io.File
 import java.io.FileNotFoundException
+import java.time.Duration
 import java.time.Instant
-import java.time.temporal.ChronoUnit
 import java.util.logging.Logger
 
-class ChecksumChecker(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
+class ChecksumCheckWorker(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
     val db =
         Room
             .databaseBuilder(
@@ -34,7 +34,7 @@ class ChecksumChecker(appContext: Context, workerParams: WorkerParameters) : Wor
         var iteration = 0
         while (iteration < MAX_ITERATIONS) {
             iteration += 1
-            val fileState = fileStateDao.getNextHashCheck(from = Instant.now().minus(1, ChronoUnit.DAYS))
+            val fileState = fileStateDao.getNextHashCheck(from = Instant.now().minus(checkFrequency))
             if (fileState == null) {
                 logger.info { "Completed hash check for all files" }
                 return Result.success()
@@ -43,7 +43,7 @@ class ChecksumChecker(appContext: Context, workerParams: WorkerParameters) : Wor
             try {
                 logger.info { "Processing hashCheck for ${fileState.filePath}" }
                 if (!fileState.hash.contentEquals(File(fileState.filePath).calculateHash())) {
-                    logger.info { "Detected hash inconsistency for ${fileState.filePath} adding to FileChangeQueue" }
+                    logger.fine { "Detected hash inconsistency for ${fileState.filePath} adding to FileChangeQueue" }
                     val change = FileChangeQueue(
                         filePath = fileState.filePath,
                         enqueuedAt = Instant.now(),
@@ -60,8 +60,9 @@ class ChecksumChecker(appContext: Context, workerParams: WorkerParameters) : Wor
     }
 
     companion object {
+        val checkFrequency: Duration = Duration.ofDays(1)
         fun start(applicationContext: Context) {
-            val uploadWorkRequest = OneTimeWorkRequestBuilder<ChecksumChecker>()
+            val uploadWorkRequest = OneTimeWorkRequestBuilder<ChecksumCheckWorker>()
                 .build()
             WorkManager
                 .getInstance(applicationContext)

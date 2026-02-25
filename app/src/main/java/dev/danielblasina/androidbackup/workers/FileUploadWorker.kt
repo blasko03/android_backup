@@ -38,7 +38,7 @@ class FileUploadWorker(appContext: Context, workerParams: WorkerParameters) : Wo
         while (true) {
             val fileChange = fileChangeQueueDao.peek() ?: break
             try {
-                logger.info("Picked from queue ${fileChange.filePath} action: ${fileChange.actionType}")
+                logger.fine("Picked from queue ${fileChange.filePath} action: ${fileChange.actionType}")
                 if (fileChange.actionType == FileActionType.REMOVE) {
                     fileStataDao.delete(fileChange.filePath)
                 } else {
@@ -74,7 +74,7 @@ class FileUploadWorker(appContext: Context, workerParams: WorkerParameters) : Wo
         @OptIn(ExperimentalWorkRequestBuilderApi::class)
         fun start(applicationContext: Context) {
             val work = OneTimeWorkRequestBuilder<FileUploadWorker>()
-                .setBackoffCriteria(BackoffPolicy.LINEAR, 1, TimeUnit.MINUTES)
+                .setBackoffCriteria(BackoffPolicy.LINEAR, 10, TimeUnit.MINUTES)
                 .setBackoffForSystemInterruptions()
                 .build()
             WorkManager.getInstance(applicationContext)

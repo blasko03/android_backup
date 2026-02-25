@@ -1,7 +1,9 @@
 package dev.danielblasina.androidbackup.workers
 
 import android.content.Context
+import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Worker
@@ -20,7 +22,13 @@ class FileUploadScheduler(appContext: Context, workerParams: WorkerParameters) :
 
     companion object {
         fun start(applicationContext: Context) {
-            val work = PeriodicWorkRequestBuilder<FileUploadScheduler>(15, TimeUnit.MINUTES)
+            val constraints = Constraints.Builder()
+                .setRequiresCharging(true)
+                .setRequiredNetworkType(NetworkType.UNMETERED)
+                .build()
+
+            val work = PeriodicWorkRequestBuilder<FileUploadScheduler>(1, TimeUnit.HOURS)
+                .setConstraints(constraints)
                 .build()
             WorkManager.getInstance(applicationContext)
                 .enqueueUniquePeriodicWork(

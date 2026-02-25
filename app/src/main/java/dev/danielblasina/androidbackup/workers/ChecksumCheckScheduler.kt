@@ -10,12 +10,12 @@ import androidx.work.WorkerParameters
 import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
-class FileChangeScheduler(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
+class ChecksumCheckScheduler(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
     val logger: Logger = Logger.getLogger(this.javaClass.name)
 
     override fun doWork(): Result {
         logger.info { "Started ${this.javaClass.name}" }
-        FileChangeWorker.start(applicationContext)
+        FileUploadWorker.start(applicationContext)
         return Result.success()
     }
 
@@ -24,7 +24,7 @@ class FileChangeScheduler(appContext: Context, workerParams: WorkerParameters) :
             val constraints = Constraints.Builder()
                 .setRequiresCharging(true)
                 .build()
-            val work = PeriodicWorkRequestBuilder<FileChangeScheduler>(1, TimeUnit.HOURS)
+            val work = PeriodicWorkRequestBuilder<ChecksumCheckScheduler>(1, TimeUnit.DAYS)
                 .setConstraints(constraints)
                 .build()
             WorkManager.getInstance(applicationContext)

@@ -14,11 +14,11 @@ import dev.danielblasina.androidbackup.database.FileChangeQueue
 import dev.danielblasina.androidbackup.files.FileUploadService
 import dev.danielblasina.androidbackup.files.UploadedFile
 import java.io.File
+import java.time.Duration
 import java.time.Instant
-import java.time.temporal.ChronoUnit
 import java.util.logging.Logger
 
-class FileStateReconcile(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
+class FileStateReconcileWorker(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
     val db =
         Room
             .databaseBuilder(
@@ -35,21 +35,21 @@ class FileStateReconcile(appContext: Context, workerParams: WorkerParameters) : 
         while (iteration < MAX_ITERATIONS) {
             iteration++
             val fileStates = fileStateDao.getNextServerCheck(
-                from = Instant.now().minus(1, ChronoUnit.MINUTES),
+                from = Instant.now().minus(checkFrequency),
                 limit = 1000,
             )
             if (fileStates.isEmpty()) {
                 logger.info { "Completed reconciliation check for all files" }
                 return Result.success()
             }
-            val fileState = fileStates.first()
+
             val filesToCheck = fileStates.map { f -> UploadedFile(name = File(f.filePath).toPath(), hash = f.hash) }
             val filesToCheckResult = FileUploadService().filesPresent(filesToCheck.toList()).getOrThrow()
             filesToCheckResult.filter { f -> !f.present }
                 .forEach { notFoundFile ->
-                    logger.info { "Detected file not found on server for ${fileState.filePath} adding to FileChangeQueue" }
+                    logger.fine { "Detected file not found on server for ${notFoundFile.name} adding to FileChangeQueue" }
                     val change = FileChangeQueue(
-                        filePath = fileState.filePath,
+                        filePath = notFoundFile.name,
                         enqueuedAt = Instant.now(),
                         actionType = FileActionType.CHANGE,
                     )
@@ -64,8 +64,9 @@ class FileStateReconcile(appContext: Context, workerParams: WorkerParameters) : 
         return Result.success()
     }
     companion object {
+        val checkFrequency: Duration = Duration.ofDays(1)
         fun start(applicationContext: Context) {
-            val work = OneTimeWorkRequestBuilder<FileStateReconcile>()
+            val work = OneTimeWorkRequestBuilder<FileStateReconcileWorker>()
                 .build()
             WorkManager
                 .getInstance(applicationContext)

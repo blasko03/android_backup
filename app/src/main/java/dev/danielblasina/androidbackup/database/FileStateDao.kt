@@ -26,6 +26,14 @@ interface FileStateDao {
     )
     fun getNextHashCheck(from: Instant): FileState?
 
+    @Query(
+        "SELECT COUNT(*) FROM FileState " +
+            "LEFT JOIN FileChangeQueue ON FileChangeQueue.filePath == FileState.filePath " +
+            "WHERE FileState.lastHashCheck < :from " +
+            "ORDER BY FileState.lastHashCheck ASC ",
+    )
+    fun countNextHashCheck(from: Instant): Int
+
     @Query("UPDATE FileState SET lastHashCheck = :instant WHERE filePath = :filePath")
     fun setHashCheck(filePath: String, instant: Instant)
 
@@ -38,9 +46,20 @@ interface FileStateDao {
     )
     fun getNextServerCheck(from: Instant, limit: Int = 1): Array<FileState>
 
+    @Query(
+        "SELECT COUNT(*) FROM FileState " +
+            "LEFT JOIN FileChangeQueue ON FileChangeQueue.filePath == FileState.filePath " +
+            "WHERE FileState.lastServerCheck < :from " +
+            "ORDER BY FileState.lastServerCheck ASC",
+    )
+    fun countNextServerCheck(from: Instant): Int
+
     @Query("UPDATE FileState SET lastServerCheck = :instant WHERE filePath IN (:filePath)")
     fun setServerCheck(filePath: List<String>, instant: Instant)
 
     @Query("DELETE FROM FileState WHERE filePath = :filePath")
     fun delete(filePath: String)
+
+    @Query("SELECT COUNT(*) FROM FileState")
+    fun count(): Int
 }

@@ -13,7 +13,7 @@ import dev.danielblasina.androidbackup.database.DATABASE_NAME
 import dev.danielblasina.androidbackup.files.FileChanges
 import java.util.logging.Logger
 
-class FileChangeDetector(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
+class FileChangeWorker(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
     val db =
         Room
             .databaseBuilder(
@@ -37,7 +37,7 @@ class FileChangeDetector(appContext: Context, workerParams: WorkerParameters) : 
 
     companion object {
         fun start(applicationContext: Context) {
-            val work = OneTimeWorkRequestBuilder<FileChangeDetector>()
+            val work = OneTimeWorkRequestBuilder<FileChangeWorker>()
                 .build()
             WorkManager
                 .getInstance(applicationContext)

@@ -3,6 +3,7 @@ package dev.danielblasina.androidbackup.workers
 import android.content.Context
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Worker
@@ -10,12 +11,13 @@ import androidx.work.WorkerParameters
 import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
-class FileChangeScheduler(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
+class FileStateReconcileScheduler(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
+
     val logger: Logger = Logger.getLogger(this.javaClass.name)
 
     override fun doWork(): Result {
         logger.info { "Started ${this.javaClass.name}" }
-        FileChangeWorker.start(applicationContext)
+        FileUploadWorker.start(applicationContext)
         return Result.success()
     }
 
@@ -23,8 +25,10 @@ class FileChangeScheduler(appContext: Context, workerParams: WorkerParameters) :
         fun start(applicationContext: Context) {
             val constraints = Constraints.Builder()
                 .setRequiresCharging(true)
+                .setRequiredNetworkType(NetworkType.UNMETERED)
                 .build()
-            val work = PeriodicWorkRequestBuilder<FileChangeScheduler>(1, TimeUnit.HOURS)
+
+            val work = PeriodicWorkRequestBuilder<FileStateReconcileScheduler>(1, TimeUnit.DAYS)
                 .setConstraints(constraints)
                 .build()
             WorkManager.getInstance(applicationContext)
