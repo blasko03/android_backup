@@ -2,25 +2,17 @@ package dev.danielblasina.androidbackup.workers
 
 import android.content.Context
 import android.os.Environment
-import androidx.room.Room
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import dev.danielblasina.androidbackup.database.AppDatabase
-import dev.danielblasina.androidbackup.database.DATABASE_NAME
 import dev.danielblasina.androidbackup.files.FileChanges
 import java.util.logging.Logger
 
 class FileChangeWorker(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
-    val db =
-        Room
-            .databaseBuilder(
-                applicationContext,
-                AppDatabase::class.java,
-                DATABASE_NAME,
-            ).build()
+    val db = AppDatabase.getDatabase(applicationContext)
     val logger: Logger = Logger.getLogger(this.javaClass.name)
 
     override fun doWork(): Result {

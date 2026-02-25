@@ -1,6 +1,8 @@
 package dev.danielblasina.androidbackup.database
 
+import android.content.Context
 import androidx.room.Database
+import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
@@ -12,4 +14,19 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun fileChangeQueueDao(): FileChangeQueueDao
 
     abstract fun fileStateDao(): FileStateDao
+
+    companion object {
+        @Volatile
+        private var dbInstance: AppDatabase? = null
+
+        fun getDatabase(context: Context): AppDatabase = dbInstance ?: synchronized(this) {
+            val instance = Room.databaseBuilder(
+                context.applicationContext,
+                AppDatabase::class.java,
+                DATABASE_NAME,
+            ).build()
+            dbInstance = instance
+            instance
+        }
+    }
 }

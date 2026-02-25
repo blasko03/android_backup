@@ -27,7 +27,7 @@ class FileUploadScheduler(appContext: Context, workerParams: WorkerParameters) :
                 .setRequiredNetworkType(NetworkType.UNMETERED)
                 .build()
 
-            val work = PeriodicWorkRequestBuilder<FileUploadScheduler>(1, TimeUnit.HOURS)
+            val work = PeriodicWorkRequestBuilder<FileUploadScheduler>(15, TimeUnit.MINUTES)
                 .setConstraints(constraints)
                 .build()
             WorkManager.getInstance(applicationContext)

@@ -15,9 +15,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.room.Room
 import dev.danielblasina.androidbackup.database.AppDatabase
-import dev.danielblasina.androidbackup.database.DATABASE_NAME
 import dev.danielblasina.androidbackup.ui.theme.MyApplicationTheme
 import dev.danielblasina.androidbackup.workers.ChecksumCheckScheduler
 import dev.danielblasina.androidbackup.workers.ChecksumCheckWorker
@@ -42,13 +40,7 @@ class MainActivity : ComponentActivity() {
         var countNextHashCheck = 0
 
         thread {
-            val db =
-                Room
-                    .databaseBuilder(
-                        applicationContext,
-                        AppDatabase::class.java,
-                        DATABASE_NAME,
-                    ).build()
+            val db = AppDatabase.getDatabase(applicationContext)
             queueCount = db.fileChangeQueueDao().count()
             fileCount = db.fileStateDao().count()
             countNextServerCheck = db.fileStateDao().countNextServerCheck(Instant.now().minus(FileStateReconcileWorker.checkFrequency))

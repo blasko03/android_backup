@@ -1,16 +1,12 @@
 package dev.danielblasina.androidbackup.workers
 
 import android.content.Context
-import androidx.room.Room
-import androidx.work.BackoffPolicy
 import androidx.work.ExistingWorkPolicy
-import androidx.work.ExperimentalWorkRequestBuilderApi
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import dev.danielblasina.androidbackup.database.AppDatabase
-import dev.danielblasina.androidbackup.database.DATABASE_NAME
 import dev.danielblasina.androidbackup.database.FileActionType
 import dev.danielblasina.androidbackup.database.FileState
 import dev.danielblasina.androidbackup.files.FileUpload
@@ -19,18 +15,11 @@ import java.io.FileNotFoundException
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
 import java.time.Instant
-import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
 class FileUploadWorker(appContext: Context, workerParams: WorkerParameters) : Worker(appContext, workerParams) {
     val logger: Logger = Logger.getLogger(this.javaClass.name)
-    val db =
-        Room
-            .databaseBuilder(
-                applicationContext,
-                AppDatabase::class.java,
-                DATABASE_NAME,
-            ).build()
+    val db = AppDatabase.getDatabase(applicationContext)
 
     override fun doWork(): Result {
         val fileChangeQueueDao = db.fileChangeQueueDao()
@@ -38,7 +27,6 @@ class FileUploadWorker(appContext: Context, workerParams: WorkerParameters) : Wo
         while (true) {
             val fileChange = fileChangeQueueDao.peek() ?: break
             try {
-                logger.fine("Picked from queue ${fileChange.filePath} action: ${fileChange.actionType}")
                 if (fileChange.actionType == FileActionType.REMOVE) {
                     fileStataDao.delete(fileChange.filePath)
                 } else {
@@ -71,11 +59,8 @@ class FileUploadWorker(appContext: Context, workerParams: WorkerParameters) : Wo
     }
 
     companion object {
-        @OptIn(ExperimentalWorkRequestBuilderApi::class)
         fun start(applicationContext: Context) {
             val work = OneTimeWorkRequestBuilder<FileUploadWorker>()
-                .setBackoffCriteria(BackoffPolicy.LINEAR, 10, TimeUnit.MINUTES)
-                .setBackoffForSystemInterruptions()
                 .build()
             WorkManager.getInstance(applicationContext)
                 .enqueueUniqueWork(

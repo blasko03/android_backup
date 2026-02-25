@@ -24,7 +24,7 @@ class FileChangeScheduler(appContext: Context, workerParams: WorkerParameters) :
             val constraints = Constraints.Builder()
                 .setRequiresCharging(true)
                 .build()
-            val work = PeriodicWorkRequestBuilder<FileChangeScheduler>(1, TimeUnit.HOURS)
+            val work = PeriodicWorkRequestBuilder<FileChangeScheduler>(15, TimeUnit.MINUTES)
                 .setConstraints(constraints)
                 .build()
             WorkManager.getInstance(applicationContext)
